@@ -1,10 +1,25 @@
 require 'csv'
 require 'google/apis/civicinfo_v2'
 require 'erb'
+require 'date'
 
 def clean_zipcode(zipcode)
   zipcode.to_s.rjust(5,"0")[0..4]
 end
+
+def clean_phone_number(phone_number)
+    if(phone_number != nil)
+        phone_number.gsub!(/[^\d]/,'')
+
+        if phone_number.length==10
+            phone_number
+        elsif phone_number.length == 11 && phone_number[0] == "1"
+            phone_number[1..10]
+        else
+            "Wrong Number!!"
+        end
+    end
+ end
 
 def legislators_by_zipcode(zip)
   civic_info = Google::Apis::CivicinfoV2::CivicInfoService.new
@@ -21,6 +36,18 @@ def legislators_by_zipcode(zip)
   end
 end
 
+def most_frequent_element(array)
+    frequency_hash = Hash.new(0)
+
+    array.each do |element|
+      frequency_hash[element] += 1
+    end
+  
+    max_frequency_element = frequency_hash.max_by { |_, frequency| frequency }
+  
+    max_frequency_element.first
+  end
+
 def save_thank_you_letter(id,form_letter)
     Dir.mkdir('output') unless Dir.exist?('output')
   
@@ -31,7 +58,14 @@ def save_thank_you_letter(id,form_letter)
     end
   end
 
+def get_hour(date_string)
+  date_time= DateTime.strptime(date_string, "%m/%d/%y %H:%M")
+  hour = date_time.hour
+end
+
 puts 'EventManager initialized.'
+
+reg_hour = []
 
 contents = CSV.open(
   'event_attendees.csv',
@@ -45,13 +79,20 @@ erb_template = ERB.new template_letter
 contents.each do |row|
     id = row[0]
     name = row[:first_name]
+    phone = row[:homephone]
+    date_string = row[:regdate]
   
     zipcode = clean_zipcode(row[:zipcode])
-  
+    phone_number = clean_phone_number(row[:zipcode])
+    reg_hour.push(get_hour(date_string))
+    
     legislators = legislators_by_zipcode(zipcode)
   
     form_letter = erb_template.result(binding)
   
     save_thank_you_letter(id,form_letter)
-  
 end
+
+
+highest_reg_hour = reg_hour.count(reg_hour.max)
+puts highest_reg_hour
