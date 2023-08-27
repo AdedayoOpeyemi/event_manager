@@ -63,9 +63,15 @@ def get_hour(date_string)
   hour = date_time.hour
 end
 
+def get_day(date_string)
+    date_time = DateTime.strptime(date_string, "%m/%d/%y %H:%M")
+    day = date_time.wday
+end
+
 puts 'EventManager initialized.'
 
 reg_hour = []
+reg_day = []
 
 contents = CSV.open(
   'event_attendees.csv',
@@ -85,6 +91,7 @@ contents.each do |row|
     zipcode = clean_zipcode(row[:zipcode])
     phone_number = clean_phone_number(row[:zipcode])
     reg_hour.push(get_hour(date_string))
+    reg_day.push(get_day(date_string))
     
     legislators = legislators_by_zipcode(zipcode)
   
@@ -94,5 +101,8 @@ contents.each do |row|
 end
 
 
-highest_reg_hour = reg_hour.count(reg_hour.max)
-puts highest_reg_hour
+highest_reg_hour = most_frequent_element(reg_hour)
+puts "Hour of the day: #{highest_reg_hour}:00"
+highest_reg_day = most_frequent_element(reg_day)
+puts "Day of the week (integer): #{highest_reg_day}"
+puts "Day of the week (string): #{Date::DAYNAMES[highest_reg_day]}"
